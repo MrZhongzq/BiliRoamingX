@@ -35,6 +35,7 @@ object Settings {
     @JvmField val TrialVipQuality = BooleanSetting(key = "trial_vip_quality")
     @JvmField val DisableSegmentedSection = BooleanSetting(key = "disable_segmented_section")
     @JvmField val DisableAutoNextPlay = BooleanSetting(key = "disable_auto_next_play")
+    @JvmField val AlwaysMiniPlay = BooleanSetting(key = "always_mini_play")
     @JvmField val DisablePlayerLongPress = BooleanSetting(key = "disable_player_long_press")
     @JvmField val ScaleToSwitchRatio = BooleanSetting(key = "scale_to_switch_ratio")
     @JvmField val ForceHwCodec = BooleanSetting(key = "force_hw_codec")

@@ -177,6 +177,8 @@
     <string name="biliroaming_allow_download_summary">使版权番剧可以缓存</string>
     <string name="biliroaming_allow_mini_play_title">允许解锁番剧小窗播放</string>
     <string name="biliroaming_allow_mini_play_summary">CC字幕并不能在小窗显示</string>
+    <string name="biliroaming_always_mini_play_title">总是允许小窗播放</string>
+    <string name="biliroaming_always_mini_play_summary">忽略 Theseus 页面的小窗播放限制</string>
     <string name="biliroaming_copy_access_key">复制当前账号访问密钥</string>
     <string name="biliroaming_area_cn">中国大陆</string>
     <string name="biliroaming_area_hk">香港</string>
