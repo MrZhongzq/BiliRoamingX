@@ -20,11 +20,11 @@ object ForbidSwitchLiveRoomPatch : BytecodePatch() {
     override fun execute(context: BytecodeContext) {
         context.findClass("Lcom/bilibili/bililive/room/ui/roomv3/vertical/widget/LiveVerticalPagerView;")?.run {
             immutableClass.fields.firstNotNullOfOrNull { f ->
-                context.findClass(f.type)?.let { c ->
-                    if (c.immutableClass.superclass == "Landroidx/recyclerview/widget/RecyclerView;") c
-                    else null
-                }
-            }?.mutableClass?.methods?.find { it.name == "onInterceptTouchEvent" }?.addInstructionsWithLabels(
+                if (context.isRecyclerViewSubclass(f.type)) context.findClass(f.type) else null
+            }?.mutableClass?.methods?.find {
+                it.name == "onInterceptTouchEvent" &&
+                        it.parameterTypes == listOf("Landroid/view/MotionEvent;")
+            }?.addInstructionsWithLabels(
                 0, """
                     invoke-static {}, Lapp/revanced/bilibili/patches/LiveRoomPatch;->forbidSwitchLiveRoom()Z
                     move-result v0
@@ -36,5 +36,16 @@ object ForbidSwitchLiveRoomPatch : BytecodePatch() {
                     """.trimIndent()
             )
         } ?: throw PatchException("not found LivePagerRecyclerView class")
+    }
+
+    private fun BytecodeContext.isRecyclerViewSubclass(type: String): Boolean {
+        var current = findClass(type)
+        while (current != null) {
+            val superClass = current.immutableClass.superclass ?: return false
+            if (superClass == "Landroidx/recyclerview/widget/RecyclerView;")
+                return true
+            current = findClass(superClass)
+        }
+        return false
     }
 }

@@ -35,12 +35,12 @@ object ForbidLiveRoomAutoFloatPatch : BytecodePatch(setOf(LiveRoomSetFloatWindow
         val iSetMethodSign = setMethod.toMutable().apply {
             definingClass = setClass.interfaces.first()
         }.toString()
-        context.classes.asSequence().flatMap { it.methods }.filter { m ->
+        val targets = context.classes.asSequence().flatMap { it.methods }.filter { m ->
             m.accessFlags.let { !it.isAbstract() && !it.isNative() }
                     && m.parameterTypes.isEmpty() && m.returnType == "V"
-        }.firstNotNullOfOrNull { m ->
+        }.mapNotNull { m ->
             val instructions = m.implementation!!.instructions.toList()
-            instructions.withIndex().firstNotNullOfOrNull { (index, inst) ->
+            val matches = instructions.withIndex().mapNotNull { (index, inst) ->
                 if (inst.opcode == Opcode.INVOKE_INTERFACE && (inst as Instruction35c).reference.toString() == iSetMethodSign) {
                     val ifInst = instructions[index - 2]
                     val constInst = instructions[index - 1]
@@ -48,9 +48,16 @@ object ForbidLiveRoomAutoFloatPatch : BytecodePatch(setOf(LiveRoomSetFloatWindow
                         index to constInst.registerA
                     } else null
                 } else null
-            }?.let { (index, register) -> Triple(m, index, register) }
-        }?.let { (method, index, register) ->
+            }
+            matches.takeIf { it.isNotEmpty() }?.let { m to it }
+        }.toList()
+
+        if (targets.isEmpty())
+            throw PatchException("not found startMiniFloatPlay method")
+
+        targets.forEach { (method, matches) ->
             context.findClass(method.definingClass)!!.mutableClass.findMutableMethodOf(method).run {
+                matches.sortedByDescending { it.first }.forEach { (index, register) ->
                 addInstructionsWithLabels(
                     index - 1, """
                     invoke-static {}, Lapp/revanced/bilibili/patches/LiveRoomPatch;->disableAutoFloat()Z
@@ -60,6 +67,7 @@ object ForbidLiveRoomAutoFloatPatch : BytecodePatch(setOf(LiveRoomSetFloatWindow
                     ExternalLabel("next", getInstruction(index + 1))
                 )
             }
-        } ?: throw PatchException("not found startMiniFloatPlay method")
+            }
+        }
     }
 }
