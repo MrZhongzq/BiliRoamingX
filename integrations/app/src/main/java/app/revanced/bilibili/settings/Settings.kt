@@ -136,6 +136,7 @@ object Settings {
     @JvmField val DisableAutoFloat = BooleanSetting(key = "disable_auto_float")
     @JvmField val RemoveLiveWatermark = BooleanSetting(key = "remove_live_watermark")
     @JvmField val LiveNoBlock = BooleanSetting(key = "live_no_block")
+    @JvmField val BlockBackInMultiWindow = BooleanSetting(key = "block_back")
     // endregion
 
 

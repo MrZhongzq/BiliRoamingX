@@ -2,6 +2,7 @@ package app.revanced.patches.bilibili.misc.other.patch
 
 import app.revanced.patcher.data.BytecodeContext
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
+import app.revanced.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.revanced.patcher.patch.BytecodePatch
 import app.revanced.patcher.patch.annotation.CompatiblePackage
 import app.revanced.patcher.patch.annotation.Patch
@@ -52,6 +53,24 @@ object FakeNotInMultiWindowPatch : BytecodePatch() {
                 """.trimIndent()
                 )
             }.let { clazz.methods.add(it) }
+
+            if (clazz.type == "Lcom/bilibili/bililive/room/ui/roomv3/LiveRoomActivityV3;") {
+                clazz.methods.find {
+                    it.name == "onBackPressed" && it.parameterTypes.isEmpty() && it.returnType == "V"
+                }?.addInstructionsWithLabels(
+                    0, """
+                    invoke-static {}, Lapp/revanced/bilibili/patches/SettingsTransfer;->blockBackInMultiWindowMode()Z
+                    move-result v0
+                    if-eqz v0, :jump
+                    invoke-super {p0}, ${clazz.superclass}->isInMultiWindowMode()Z
+                    move-result v0
+                    if-eqz v0, :jump
+                    return-void
+                    :jump
+                    nop
+                """.trimIndent()
+                )
+            }
 
             clazz.methods.find {
                 it.name == "onMultiWindowModeChanged" && it.parameterTypes == listOf("Z")

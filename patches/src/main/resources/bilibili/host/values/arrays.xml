@@ -395,10 +395,12 @@
     <string-array name="biliroaming_block_follow_button_entries">
         <item>评论</item>
         <item>动态</item>
+        <item>播放器</item>
     </string-array>
     <string-array name="biliroaming_block_follow_button_values">
         <item>comment</item>
         <item>dynamic</item>
+        <item>player</item>
     </string-array>
     <string-array name="biliroaming_filter_story_entries">
         <item>广告</item>

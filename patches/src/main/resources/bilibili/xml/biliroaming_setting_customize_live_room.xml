@@ -32,6 +32,10 @@
             android:summary="@string/biliroaming_disable_auto_float_summary"
             android:title="@string/biliroaming_disable_auto_float_title" />
         <androidx.preference.SwitchPreferenceCompat
+            android:key="block_back"
+            android:summary="@string/biliroaming_block_back_summary"
+            android:title="@string/biliroaming_block_back_title" />
+        <androidx.preference.SwitchPreferenceCompat
             android:key="remove_live_watermark"
             android:summary="@string/biliroaming_remove_live_watermark_summary"
             android:title="@string/biliroaming_remove_live_watermark_title" />
