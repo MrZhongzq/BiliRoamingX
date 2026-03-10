@@ -179,6 +179,8 @@
     <string name="biliroaming_allow_mini_play_summary">CC字幕并不能在小窗显示</string>
     <string name="biliroaming_always_mini_play_title">总是允许小窗播放</string>
     <string name="biliroaming_always_mini_play_summary">忽略 Theseus 页面的小窗播放限制</string>
+    <string name="biliroaming_mini_follow_full_title">小窗画质跟随全屏画质</string>
+    <string name="biliroaming_mini_follow_full_summary">启用后，小窗播放会跟随全屏画质，最高跟随到 4K。</string>
     <string name="biliroaming_copy_access_key">复制当前账号访问密钥</string>
     <string name="biliroaming_area_cn">中国大陆</string>
     <string name="biliroaming_area_hk">香港</string>
