@@ -76,6 +76,7 @@ object Settings {
     @JvmField val AddKorea = BooleanSetting(key = "add_korea", needReboot = true)
     @JvmField val PurifyGame = BooleanSetting(key = "purify_game", needReboot = true)
     @JvmField val Drawer = BooleanSetting(key = "drawer")
+    @JvmField val PreferBottomTab = StringSetting(key = "prefer_bottom_tab", defValue = "home")
     @JvmField val DisableHomeStory = BooleanSetting(key = "disable_main_page_story", needReboot = true)
     @JvmField val BlockTopActivity =
         BooleanSetting(key = "block_top_activity", needReboot = true, onChange = { value, _ ->
@@ -262,6 +263,7 @@ object Settings {
     @JvmField val FuckMiniProgram = BooleanSetting(key = "mini_program")
     @JvmField val NumberFormat = BooleanSetting(key = "number_format")
     @JvmField val AutoReceiveCoupon = BooleanSetting(key = "auto_receive_coupon")
+    @JvmField val SkipRewardAd = BooleanSetting(key = "skip_reward_ad")
     @JvmField val DisplaySize = StringSetting(key = "display_size", defValue = "0", needReboot = true)
     @JvmField val CustomSplash = BooleanSetting(key = "custom_splash")
     @JvmField val CustomSplashLogo = BooleanSetting(key = "custom_splash_logo")

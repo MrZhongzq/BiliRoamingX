@@ -92,19 +92,34 @@ sealed class Setting<out T : Any>(
         }
 
         private fun migrate() {
-            if (Utils.isMainProcess() &&
-                (prefs.getBoolean("remove_video_cmd_dms", false)
-                        || prefs.getBoolean("purify_search", false))
-            ) prefs.edit(commit = true) {
-                if (prefs.getBoolean("remove_video_cmd_dms", false)) {
+            if (!Utils.isMainProcess()) return
+            val migrateRemoveVideoCmdDms = prefs.getBoolean("remove_video_cmd_dms", false)
+            val migratePurifySearch = prefs.getBoolean("purify_search", false)
+            val migrateShowHint = prefs.contains("show_hint_new") && !prefs.contains("show_hint")
+            val migrateForceOldFavorite = prefs.contains("force_old_favorite") && !prefs.contains("old_fav")
+            if (!migrateRemoveVideoCmdDms &&
+                !migratePurifySearch &&
+                !migrateShowHint &&
+                !migrateForceOldFavorite
+            ) return
+            prefs.edit(commit = true) {
+                if (migrateRemoveVideoCmdDms) {
                     remove("remove_video_cmd_dms")
                     val popups = setOf("vote", "attention", "grade", "gradeSummary", "link", "other")
                     putStringSet("remove_video_popups", popups)
                 }
-                if (prefs.getBoolean("purify_search", false)) {
+                if (migratePurifySearch) {
                     remove("purify_search")
                     val types = setOf("words", "trending", "recommend")
                     putStringSet("purify_search_types", types)
+                }
+                if (migrateShowHint) {
+                    putBoolean("show_hint", prefs.getBoolean("show_hint_new", false))
+                    remove("show_hint_new")
+                }
+                if (migrateForceOldFavorite) {
+                    putBoolean("old_fav", prefs.getBoolean("force_old_favorite", false))
+                    remove("force_old_favorite")
                 }
             }
         }

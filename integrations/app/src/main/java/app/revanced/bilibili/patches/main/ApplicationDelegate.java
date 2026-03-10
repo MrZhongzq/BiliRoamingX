@@ -3,6 +3,7 @@ package app.revanced.bilibili.patches.main;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -44,6 +45,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
@@ -341,6 +343,102 @@ public abstract class ApplicationDelegate extends Application {
         }
     }
 
+    private static void applyPreferredBottomTab(@Nullable Intent intent) {
+        if (intent == null || Utils.isHd())
+            return;
+        String preferBottomTab = Settings.PreferBottomTab.get();
+        String[] entries = Utils.getStringArray("biliroaming_prefer_bottom_tab_entries");
+        String tabName;
+        switch (preferBottomTab) {
+            case "dynamic":
+                tabName = entries.length > 1 ? entries[1] : "动态";
+                break;
+            case "mine":
+                tabName = entries.length > 2 ? entries[2] : "我的";
+                break;
+            case "home":
+            default:
+                tabName = entries.length > 0 ? entries[0] : "首页";
+                break;
+        }
+        intent.putExtra("bottom_tab_name", tabName);
+    }
+
+    private static void trySkipRewardAd(@NonNull Activity activity) {
+        if (!Settings.SkipRewardAd.get() || !isRewardAdActivity(activity))
+            return;
+        String activityName = activity.getClass().getName();
+        try {
+            View countdownView = activity.findViewById(Utils.getResId("ad_tag_count_down_view", "id"));
+            View closeView = activity.findViewById(Utils.getResId("tv_close", "id"));
+            if (countdownView == null || closeView == null) {
+                View headerLayout = activity.findViewById(Utils.getResId("header_layout", "id"));
+                if (headerLayout != null) {
+                    countdownView = headerLayout.findViewById(Utils.getResId("tv_countdown", "id"));
+                    closeView = headerLayout.findViewById(Utils.getResId("tv_close", "id"));
+                }
+            }
+            if (countdownView == null || closeView == null) {
+                Logger.debug(() -> "SkipRewardAd, missing countdown or close view on " + activityName);
+                return;
+            }
+            Object endAction = Reflex.callMethod(countdownView, "getEndAction");
+            if (endAction == null) {
+                Logger.debug(() -> "SkipRewardAd, missing end action on " + activityName);
+                return;
+            }
+            if (!invokeRewardEndAction(endAction)) {
+                Logger.debug(() -> "SkipRewardAd, missing invokable action on " + activityName);
+                return;
+            }
+            closeView.callOnClick();
+            Logger.debug(() -> "SkipRewardAd, skipped reward ad on " + activityName);
+        } catch (Throwable t) {
+            Logger.error(t, () -> "SkipRewardAd failed on " + activityName);
+        }
+    }
+
+    private static boolean isRewardAdActivity(@NonNull Activity activity) {
+        Class<?> clazz = activity.getClass();
+        while (clazz != null) {
+            String className = clazz.getName();
+            if ("com.bilibili.ad.reward.RewardAdActivity".equals(className)
+                    || "com.bilibili.ad.reward.activity.BaseRewardAdActivity".equals(className)) {
+                return true;
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return false;
+    }
+
+    private static boolean invokeRewardEndAction(@NonNull Object endAction) throws Throwable {
+        Method target = null;
+        for (Class<?> iface : endAction.getClass().getInterfaces()) {
+            for (Method method : iface.getDeclaredMethods()) {
+                if (method.getParameterCount() == 0) {
+                    target = method;
+                    break;
+                }
+            }
+            if (target != null)
+                break;
+        }
+        if (target == null) {
+            for (Method method : endAction.getClass().getDeclaredMethods()) {
+                if (method.getParameterCount() == 0) {
+                    target = method;
+                    break;
+                }
+            }
+        }
+        if (target == null)
+            return false;
+        if (!target.isAccessible())
+            target.setAccessible(true);
+        target.invoke(endAction);
+        return true;
+    }
+
     static class SettingsLayoutFactory implements LayoutInflater.Factory2 {
 
         private final LayoutInflater.Factory2 delegate;
@@ -402,6 +500,9 @@ public abstract class ApplicationDelegate extends Application {
         public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
             printLifecycle(activity, "onActivityCreated", true);
             activityRefs.push(new WeakReference<>(activity));
+            if (activity instanceof MainActivityV2 && !Utils.isHd()) {
+                applyPreferredBottomTab(activity.getIntent());
+            }
             if (activity instanceof BiliPreferencesActivity
                     || activity instanceof MessageTipItemActivity
                     || (Utils.isHd() && activity instanceof MainActivityV2)) {
@@ -439,6 +540,12 @@ public abstract class ApplicationDelegate extends Application {
         @Override
         public void onActivityStarted(@NonNull Activity activity) {
             printLifecycle(activity, "onActivityStarted", false);
+        }
+
+        @Override
+        public void onActivityPostCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+            printLifecycle(activity, "onActivityPostCreated", true);
+            trySkipRewardAd(activity);
         }
 
         @Override

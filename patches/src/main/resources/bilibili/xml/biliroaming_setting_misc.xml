@@ -33,6 +33,10 @@
             android:key="auto_receive_coupon"
             android:summary="@string/biliroaming_auto_receive_coupon_summary"
             android:title="@string/biliroaming_auto_receive_coupon_title" />
+        <androidx.preference.SwitchPreferenceCompat
+            android:key="skip_reward_ad"
+            android:summary="@string/biliroaming_skip_reward_ad_summary"
+            android:title="@string/biliroaming_skip_reward_ad_title" />
         <tv.danmaku.bili.widget.preference.BLRadioGroupEntrancePreference
             android:fragment="app.revanced.bilibili.settings.fragments.DisplaySizeFragment"
             android:key="display_size"

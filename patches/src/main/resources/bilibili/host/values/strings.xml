@@ -311,10 +311,14 @@
     <string name="biliroaming_coupon_receive_success">%s自动领取成功！</string>
     <string name="biliroaming_auto_receive_coupon_title">自动领取卡券及经验</string>
     <string name="biliroaming_auto_receive_coupon_summary">大会员自动领取每月B币券、装扮体验卡、每日观看及分享视频经验等</string>
+    <string name="biliroaming_skip_reward_ad_title">跳过激励广告</string>
+    <string name="biliroaming_skip_reward_ad_summary">在广告页出现后尝试直接触发倒计时结束并关闭广告</string>
     <string name="biliroaming_block_activity_tab_title">隐藏活动标签</string>
     <string name="biliroaming_block_activity_tab_summary">隐藏“一起聊”等活动标签</string>
     <string name="biliroaming_block_recommend_guidance_title">屏蔽个性化推荐指引</string>
     <string name="biliroaming_block_recommend_guidance_summary">当关闭个性化推荐时，屏蔽开启指引弹窗</string>
+    <string name="biliroaming_prefer_bottom_tab_title">默认底部标签</string>
+    <string name="biliroaming_prefer_bottom_tab_summary">设置应用启动时优先打开的底部标签页</string>
     <string name="biliroaming_display_size_title">调整显示大小</string>
     <string name="biliroaming_display_size_summary">调整显示大小，以整体缩放APP内显示内容</string>
     <string name="biliroaming_filter_popular_title">过滤热门内容</string>

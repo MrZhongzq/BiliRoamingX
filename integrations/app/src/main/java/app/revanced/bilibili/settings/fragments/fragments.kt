@@ -11,6 +11,9 @@ class BlockFollowFragment : BiliRoamingBaseSettingFragment()
 class CustomizeBottomFragment :
     BaseDynamicItemsFragment(Settings.ShowingBottomItems, JSONPatch.bottomItems)
 
+@SettingFragment("biliroaming_setting_prefer_bottom_tab")
+class PreferBottomTabFragment : BiliRoamingBaseSettingFragment()
+
 @SettingFragment("biliroaming_setting_customize_dynamic")
 class CustomizeDynamicFragment : BiliRoamingBaseSettingFragment()
 

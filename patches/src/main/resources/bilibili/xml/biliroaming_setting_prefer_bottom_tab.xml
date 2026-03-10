@@ -1,18 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <tv.danmaku.bili.widget.preference.BLRadioGroupEntrancePreference
-        android:fragment="app.revanced.bilibili.settings.fragments.PreferBottomTabFragment"
+    <tv.danmaku.bili.widget.RadioGroupPreference
         android:key="prefer_bottom_tab"
         android:persistent="true"
-        android:summary="@string/biliroaming_prefer_bottom_tab_summary"
-        android:title="@string/biliroaming_prefer_bottom_tab_title"
         app:migration_settings_type="none"
         app:radioDefaultValue="home"
         app:radioEntries="@array/biliroaming_prefer_bottom_tab_entries"
+        app:radioEntrySummaries="@array/biliroaming_prefer_bottom_tab_summaries"
         app:radioEntryValues="@array/biliroaming_prefer_bottom_tab_values" />
-    <app.revanced.bilibili.widget.CheckBoxGroupPreference
-        android:key="showing_bottom_items"
-        android:persistent="true"
-        app:migration_settings_type="none" />
 </androidx.preference.PreferenceScreen>
