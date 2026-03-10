@@ -2,10 +2,13 @@ name: PR Check
 
 on:
   pull_request:
+    branches:
+      - modernize-8.81.0
     paths-ignore:
       - '**.md'
       - '.github/**'
       - '!.github/workflows/*'
+  workflow_dispatch:
 
 jobs:
   build:
