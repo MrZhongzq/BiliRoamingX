@@ -16,11 +16,16 @@ setupAppModule {
         applicationId = "app.revanced.bilibili.integrations"
         multiDexEnabled = false
 
-        val verName = version as String
+        val verName = providers.gradleProperty("version")
+            .orNull
+            ?.takeIf { it.isNotBlank() }
+            ?: project.version.toString()
         versionName = verName
-        versionCode = verName.split('.').let { (m, s, f) ->
-            m.toInt() * 1000000 + s.toInt() * 1000 + f.toInt()
-        }
+        val (m, s, f) = Regex("""(\d+)\.(\d+)\.(\d+)""")
+            .find(verName)
+            ?.destructured
+            ?: error("Invalid version format: $verName")
+        versionCode = m.toInt() * 1000000 + s.toInt() * 1000 + f.toInt()
 
         externalNativeBuild {
             cmake {

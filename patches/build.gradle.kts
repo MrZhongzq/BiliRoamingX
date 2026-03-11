@@ -12,7 +12,7 @@ plugins {
 group = "app.revanced.bilibili"
 
 dependencies {
-    implementation(libs.revanced.patcher)
+    implementation(files(rootProject.file("prebuilts/revanced-patcher-19.3.1.jar")))
     implementation(libs.smali)
     // Used in JsonGenerator.
     implementation(libs.gson)
