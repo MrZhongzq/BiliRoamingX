@@ -79,20 +79,36 @@ object CacheRedirectPatch : MultiMethodBytecodePatch(
             throw OnOgvDownloadFingerprint.exception
         }.forEach { r ->
             val originMethod = r.mutableMethod
+            val hasOGVCacheFromType = originMethod.parameterTypes.size == 2
             originMethod.cloneMutable(registerCount = 4, clearImplementation = true).apply {
                 originMethod.name += "_Origin"
-                addInstructionsWithLabels(
-                    0, """
-                    const-string v0, "${originMethod.name}"
-                    invoke-static {p0, v0, p1, p2}, Lapp/revanced/bilibili/patches/CacheRedirectPatch;->onOgvDownload(Ljava/lang/Object;Ljava/lang/String;Landroid/content/Context;Ljava/lang/Enum;)Z
-                    move-result v0
-                    if-eqz v0, :invoke_origin
-                    return-void
-                    :invoke_origin
-                    invoke-virtual {p0, p1, p2}, $originMethod
-                    return-void
-                """.trimIndent()
-                )
+                if (hasOGVCacheFromType) {
+                    addInstructionsWithLabels(
+                        0, """
+                        const-string v0, "${originMethod.name}"
+                        invoke-static {p0, v0, p1, p2}, Lapp/revanced/bilibili/patches/CacheRedirectPatch;->onOgvDownload(Ljava/lang/Object;Ljava/lang/String;Landroid/content/Context;Ljava/lang/Enum;)Z
+                        move-result v0
+                        if-eqz v0, :invoke_origin
+                        return-void
+                        :invoke_origin
+                        invoke-virtual {p0, p1, p2}, $originMethod
+                        return-void
+                    """.trimIndent()
+                    )
+                } else {
+                    addInstructionsWithLabels(
+                        0, """
+                        const-string v0, "${originMethod.name}"
+                        invoke-static {p0, v0, p1}, Lapp/revanced/bilibili/patches/CacheRedirectPatch;->onTheseusOgvDownload(Ljava/lang/Object;Ljava/lang/String;Landroid/content/Context;)Z
+                        move-result v0
+                        if-eqz v0, :invoke_origin
+                        return-void
+                        :invoke_origin
+                        invoke-virtual {p0, p1}, $originMethod
+                        return-void
+                    """.trimIndent()
+                    )
+                }
             }.also { r.mutableClass.methods.add(it) }
         }
         TheseusOnOgvDownloadFingerprint.result?.run {

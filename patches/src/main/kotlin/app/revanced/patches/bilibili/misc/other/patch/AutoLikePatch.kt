@@ -7,7 +7,6 @@ import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.annotation.CompatiblePackage
 import app.revanced.patcher.patch.annotation.Patch
 import app.revanced.patches.bilibili.misc.other.fingerprints.SectionFingerprint
-import app.revanced.util.exception
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
@@ -23,7 +22,7 @@ import com.android.tools.smali.dexlib2.Opcode
 object AutoLikePatch : BytecodePatch(setOf(SectionFingerprint)) {
     override fun execute(context: BytecodeContext) {
         val clazz = SectionFingerprint.result?.mutableClass
-            ?: throw SectionFingerprint.exception
+            ?: return
         val likeMethod = context.classes.first { it.type == clazz.superclass }.virtualMethods.find { m ->
             m.parameterTypes.size == 1 && m.returnType == "V" && !AccessFlags.FINAL.isSet(m.accessFlags)
         } ?: throw PatchException("can not found like method")

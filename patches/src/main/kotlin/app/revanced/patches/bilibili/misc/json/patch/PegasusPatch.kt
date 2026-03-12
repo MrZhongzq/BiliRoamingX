@@ -4,7 +4,6 @@ import app.revanced.patcher.data.BytecodeContext
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructions
 import app.revanced.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.revanced.patcher.patch.BytecodePatch
-import app.revanced.patcher.patch.PatchException
 import app.revanced.patcher.patch.annotation.CompatiblePackage
 import app.revanced.patcher.patch.annotation.Patch
 import app.revanced.patcher.util.proxy.mutableTypes.MutableMethod
@@ -58,7 +57,7 @@ object PegasusPatch : BytecodePatch(
                 it.annotation("Lcom/alibaba/fastjson/annotation/JSONField;")
                     ?.value<StringEncodedValue>("name")?.value == "banner_item"
             }?.let { c to it } else null
-        } ?: throw PatchException("not found banner item field")
+        } ?: return
         val myBannersItemClassName = "Lapp/revanced/bilibili/meta/pegasus/BannersItem;"
         val myBannersItemClass = context.findClass(myBannersItemClassName)!!
         stockBannersItemClass.proxy(context).setSuperClass(myBannersItemClassName)

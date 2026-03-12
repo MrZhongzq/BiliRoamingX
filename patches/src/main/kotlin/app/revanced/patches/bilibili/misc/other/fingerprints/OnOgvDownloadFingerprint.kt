@@ -8,7 +8,8 @@ object OnOgvDownloadFingerprint : MultiMethodFingerprint(
     returnType = "V",
     customFingerprint = { methodDef, _ ->
         methodDef.parameterTypes.let {
-            it.size == 2 && it[0] == "Landroid/content/Context;" && it[1].endsWith("OGVCacheFromType;")
+            (it.size == 1 && it[0] == "Landroid/content/Context;") ||
+                    (it.size == 2 && it[0] == "Landroid/content/Context;" && it[1].endsWith("OGVCacheFromType;"))
         }
     }
 )

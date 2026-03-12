@@ -118,7 +118,7 @@ object SubtitleImportSavePatch : MultiMethodBytecodePatch(
             it.type == widgetTokenClass
         }.name
         val recordSelectedSubtitleMethod = RecordSelectedSubtitleFingerprint.result?.method
-            ?.name ?: throw RecordSelectedSubtitleFingerprint.exception
+            ?.name ?: return
         val hookInfoProviderClass = context.findClass(
             "Lapp/revanced/bilibili/patches/SubtitleImportSavePatch\$HookInfo;"
         )!!.mutableClass

@@ -4,6 +4,4 @@ import app.revanced.patcher.fingerprint.MethodFingerprint
 
 object IjkMediaPlayerOptionsFingerprint : MethodFingerprint(
     strings = listOf("enable-decoder-switch"),
-    parameters = listOf(),
-    returnType = "V"
 )

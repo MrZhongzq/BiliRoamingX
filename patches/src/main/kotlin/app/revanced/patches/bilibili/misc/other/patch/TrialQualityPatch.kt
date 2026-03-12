@@ -26,18 +26,21 @@ object TrialQualityPatch : MultiMethodBytecodePatch(
         val patchMethod = context.findClass("Lapp/revanced/bilibili/patches/TrialQualityPatch;")!!
             .mutableClass.methods.first { it.name == "onBindOnline" }
         QualityViewHolderFingerprint.result.associate { r ->
-            r.mutableClass.methods to r.mutableClass.methods.first { m ->
-                m.parameterTypes.let { it.size == 5 && it[1] == "Z" && it[3] == "Landroid/widget/TextView;" && it[4] == "Landroid/widget/TextView;" }
-            }
+            r.mutableClass.methods to (r.mutableClass.methods.firstOrNull { m ->
+                m.parameterTypes.let { (it.size == 5 || it.size == 6) && it[1] == "Z" && it[3] == "Landroid/widget/TextView;" && it[4] == "Landroid/widget/TextView;" }
+            } ?: return@associate r.mutableClass.methods to null)
         }.ifEmpty {
             throw QualityViewHolderFingerprint.exception
         }.forEach { (methods, method) ->
+            method ?: return@forEach
+            val paramCount = method.parameterTypes.size
+            val regCount = paramCount + 1
             val originMethod = method.cloneMutable(name = method.name + "_Origin")
                 .also { methods.add(it) }
-            method.also { methods.remove(it) }.cloneMutable(registerCount = 6, clearImplementation = true).apply {
+            method.also { methods.remove(it) }.cloneMutable(registerCount = regCount, clearImplementation = true).apply {
                 addInstructions(
                     """
-                    invoke-direct/range {p0 .. p5}, $originMethod
+                    invoke-direct/range {p0 .. p$paramCount}, $originMethod
                     invoke-static {p2, p4, p5}, $patchMethod
                     return-void
                 """.trimIndent()

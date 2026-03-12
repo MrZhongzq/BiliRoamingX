@@ -53,10 +53,7 @@ object RememberPlaybackSpeedPatch : MultiMethodBytecodePatch(
                 invoke-static {v0}, Lapp/revanced/bilibili/patches/PlaybackSpeedPatch;->onPlaybackSpeedSelected(F)V
             """.trimIndent()
             )
-        } ?: run {
-            if (SettingsResourcePatch.isPink)
-                throw PlayerSettingCreateSpeedFingerprint.exception
-        }
+        } ?: return
         MenuServiceCreateSpeedFingerprint.result?.run {
             val speedListField = mutableClass.fields.first { it.type == "Ljava/util/List;" }
             mutableMethod.addInstructions(
