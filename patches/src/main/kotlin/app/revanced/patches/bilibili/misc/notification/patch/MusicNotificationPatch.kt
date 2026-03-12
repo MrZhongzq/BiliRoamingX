@@ -55,7 +55,7 @@ object MusicNotificationPatch : BytecodePatch(
             :jump
             nop
         """.trimIndent()
-        ) ?: throw NotificationStyleAbFingerprint.exception
+        )
 
         val onCreateNotificationMethod = patchClass.methods.first { it.name == "onCreateNotification" }
         arrayOf(

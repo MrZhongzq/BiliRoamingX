@@ -47,12 +47,15 @@ class HdPreferenceClickFixPatch : BytecodePatch(
         fun MethodFingerprint.patch() =
             result?.mutableMethod?.patch() ?: throw exception
 
+        fun MethodFingerprint.patchOrSkip() =
+            result?.mutableMethod?.patch()
+
         arrayOf(
             HdOnSettingsClickFingerprint,
             HdOnWatchLaterClickFingerprint,
             HdOnImClickFingerprint,
             HdOnContactClickFingerprint,
-            HdOnCourseClickFingerprint,
         ).forEach { it.patch() }
+        HdOnCourseClickFingerprint.patchOrSkip()
     }
 }

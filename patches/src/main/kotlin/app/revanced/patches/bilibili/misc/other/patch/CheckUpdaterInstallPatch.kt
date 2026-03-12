@@ -19,21 +19,30 @@ import app.revanced.patches.bilibili.utils.cloneMutable
 )
 object CheckUpdaterInstallPatch : BytecodePatch() {
     override fun execute(context: BytecodeContext) {
+        // Find updater helper class dynamically - obfuscated name changes between versions
         val clazz = context.findClass("Ltv/danmaku/bili/update/utils/h;")?.mutableClass
-            ?: throw PatchException("not found updater helper class")
+            ?: context.classes.firstOrNull { classDef ->
+                classDef.type.startsWith("Ltv/danmaku/bili/update/utils/")
+                    && classDef.methods.any { it.returnType == "V" && it.parameterTypes == listOf("Landroid/content/Context;") }
+            }?.let { context.findClass(it.type)?.mutableClass }
+            ?: return // Skip patch if class not found
         val method = clazz.methods.firstOrNull {
-            it.name == "d" && it.returnType == "V" && it.parameterTypes == listOf("Landroid/content/Context;")
-        } ?: throw PatchException("not found updater check method")
+            it.returnType == "V" && it.parameterTypes == listOf("Landroid/content/Context;")
+                && it.implementation != null
+        } ?: return // Skip patch if method not found
+        val origName = method.name
+        val originName = "${origName}_Origin"
         if (clazz.methods.any {
-                it.name == "d_Origin" && it.returnType == "V" && it.parameterTypes == listOf("Landroid/content/Context;")
+                it.name == originName && it.returnType == "V" && it.parameterTypes == listOf("Landroid/content/Context;")
             })
             return
-        method.name = "d_Origin"
-        method.cloneMutable(registerCount = 3, clearImplementation = true, name = "d").apply {
+        val className = clazz.type.substring(1, clazz.type.length - 1).replace('/', '.')
+        method.name = originName
+        method.cloneMutable(registerCount = 3, clearImplementation = true, name = origName).apply {
             addInstructions(
                 """
-                const-string v0, "tv.danmaku.bili.update.utils.h"
-                const-string v1, "d_Origin"
+                const-string v0, "$className"
+                const-string v1, "$originName"
                 invoke-static {p0, v0, v1}, Lapp/revanced/bilibili/patches/CheckUpdaterInstallPatch;->onCheck(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
                 return-void
                 """.trimIndent()
