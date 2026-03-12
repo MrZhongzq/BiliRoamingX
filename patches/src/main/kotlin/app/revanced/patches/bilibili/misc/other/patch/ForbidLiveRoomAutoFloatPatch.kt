@@ -42,11 +42,17 @@ object ForbidLiveRoomAutoFloatPatch : BytecodePatch(setOf(LiveRoomSetFloatWindow
             val instructions = m.implementation!!.instructions.toList()
             val matches = instructions.withIndex().mapNotNull { (index, inst) ->
                 if (inst.opcode == Opcode.INVOKE_INTERFACE && (inst as Instruction35c).reference.toString() == iSetMethodSign) {
-                    val ifInst = instructions[index - 2]
-                    val constInst = instructions[index - 1]
-                    if (ifInst.opcode == Opcode.IF_EQZ && constInst.opcode == Opcode.CONST_4 && constInst is Instruction11n) {
-                        index to constInst.registerA
-                    } else null
+                    // v8.85.0+: pattern is IF_EQZ, INVOKE_INTERFACE (no CONST_4 in between)
+                    // older: pattern is IF_EQZ, CONST_4, INVOKE_INTERFACE
+                    val prev1 = instructions.getOrNull(index - 1)
+                    val prev2 = instructions.getOrNull(index - 2)
+                    when {
+                        prev2?.opcode == Opcode.IF_EQZ && prev1?.opcode == Opcode.CONST_4 && prev1 is Instruction11n ->
+                            index to prev1.registerA
+                        prev1?.opcode == Opcode.IF_EQZ ->
+                            index to inst.registerD
+                        else -> null
+                    }
                 } else null
             }
             matches.takeIf { it.isNotEmpty() }?.let { m to it }

@@ -14,7 +14,10 @@ import app.revanced.patches.bilibili.utils.classDescriptor
 import app.revanced.patches.bilibili.utils.isAbstract
 import app.revanced.util.getReference
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.formats.Instruction35c
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 @Patch(
     name = "Force comment time navigable",
@@ -40,11 +43,33 @@ object ForceCommentNavigablePatch : BytecodePatch(fingerprints = setOf(CommentCo
         ) ?: throw PatchException("not found PrimaryCommentMainFragment")
         CommentConfigFingerprint.result?.run {
             val index = scanResult.stringsScanResult!!.matches.last().index
-            val seekEnabledField = mutableMethod.getInstructions().withIndex().firstNotNullOf { (i, inst) ->
-                if (i > index && inst.opcode == Opcode.IGET_BOOLEAN) {
-                    inst.getReference<FieldReference>()
-                } else null
-            }
+            val allInstructions = mutableMethod.getInstructions().toList()
+            // Find the IGET_BOOLEAN for seekEnabled field
+            // Strategy: find append(Z) call right after "seekEnabled=" string,
+            // get its register, then find the IGET_BOOLEAN that loaded that register
+            val seekEnabledField = run findField@{
+                // First try: look for IGET_BOOLEAN after the string (old layout)
+                allInstructions.withIndex().firstNotNullOfOrNull { (i, inst) ->
+                    if (i > index && inst.opcode == Opcode.IGET_BOOLEAN)
+                        inst.getReference<FieldReference>()
+                    else null
+                }?.let { return@findField it }
+                // v8.85.0+: fields loaded before strings, find append(Z) after seekEnabled string
+                val appendIdx = (index + 1 until allInstructions.size).firstOrNull { i ->
+                    val inst = allInstructions[i]
+                    inst.opcode == Opcode.INVOKE_VIRTUAL && inst.getReference<MethodReference>()?.let {
+                        it.name == "append" && it.parameterTypes == listOf("Z")
+                    } == true
+                } ?: return
+                val appendInst = allInstructions[appendIdx] as Instruction35c
+                val boolReg = appendInst.registerD
+                // Find IGET_BOOLEAN that stored into this register
+                allInstructions.withIndex().filter { (i, inst) ->
+                    i < index && inst.opcode == Opcode.IGET_BOOLEAN
+                }.lastOrNull { (_, inst) ->
+                    (inst as? TwoRegisterInstruction)?.registerA == boolReg
+                }?.let { (_, inst) -> inst.getReference<FieldReference>() }
+            } ?: return
             mutableClass.methods.first { m ->
                 m.parameterTypes.isEmpty() && m.returnType == "Z" && !m.accessFlags.isAbstract()
                         && m.getInstruction(0).let {
