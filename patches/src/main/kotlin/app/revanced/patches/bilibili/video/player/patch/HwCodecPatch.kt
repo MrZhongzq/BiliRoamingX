@@ -23,7 +23,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 )
 object HwCodecPatch : BytecodePatch(setOf(IjkMediaPlayerOptionsFingerprint)) {
     override fun execute(context: BytecodeContext) {
-        val method = IjkMediaPlayerOptionsFingerprint.result?.mutableMethod ?: return
+        val result = IjkMediaPlayerOptionsFingerprint.result ?: return
+        val method = result.mutableMethod
+        // Only proceed if the matched method is in the expected IjkMediaPlayer package
+        if (!result.classDef.type.contains("ijk/media/player")) return
         // Verify the matched method actually contains the expected references
         val hasSetOptionBundle = method.implementation!!.instructions.any { inst ->
             inst.opcode == Opcode.INVOKE_INTERFACE && runCatching {
