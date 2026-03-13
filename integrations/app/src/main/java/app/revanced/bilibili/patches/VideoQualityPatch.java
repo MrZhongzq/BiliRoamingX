@@ -32,6 +32,7 @@ public class VideoQualityPatch {
         return Integer.parseInt(qualityStr);
     }
 
+    @Keep
     public static int getMiniMaxQuality(int quality) {
         if (!Settings.MiniFollowFull.get()) {
             return quality;
@@ -112,6 +113,7 @@ public class VideoQualityPatch {
         return KtUtils.isWifiConnected() ? fullScreenQuality() : mobileFullScreenQuality();
     }
 
+    @Keep
     public static Object onPlayerGetValueFromPref(String key, Object value) {
         int matchedFullScreenQuality;
         return (("pref_player_mediaSource_quality_wifi_key".equals(key)
@@ -121,10 +123,12 @@ public class VideoQualityPatch {
             : value;
     }
 
+    @Keep
     public static boolean useRecommendedQn(boolean useRecommendedQn) {
         return halfScreenQuality() == 0 && useRecommendedQn;
     }
 
+    @Keep
     public static void onUpdateQualityAdapter(Object adapter) throws IllegalAccessException {
         ArrayList<Object> qualityItems = findQualityItems(adapter);
         if (qualityItems == null || qualityItems.isEmpty()) {
