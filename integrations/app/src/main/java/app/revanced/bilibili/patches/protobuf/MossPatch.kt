@@ -8,6 +8,7 @@ import app.revanced.bilibili.meta.HookFlags
 import app.revanced.bilibili.patches.protobuf.hooks.*
 import app.revanced.bilibili.settings.Settings
 import app.revanced.bilibili.utils.*
+import app.revanced.bilibili.utils.Logger
 import com.bapis.bilibili.metadata.network.Network
 import com.bapis.bilibili.metadata.network.NetworkType
 import com.bilibili.lib.moss.api.MossException
@@ -73,7 +74,12 @@ object MossPatch {
     @Keep
     @JvmStatic
     fun hookBlockingBefore(req: GeneratedMessageLite<*, *>): Any? {
-        return hooks.firstOrNull { it.shouldHook(req) }?.hookBefore(req)
+        return try {
+            hooks.firstOrNull { it.shouldHook(req) }?.hookBefore(req)
+        } catch (e: Throwable) {
+            Logger.error(e) { "MossPatch hookBlockingBefore error" }
+            null
+        }
     }
 
     /**
@@ -89,8 +95,15 @@ object MossPatch {
         error: MossException?
     ): GeneratedMessageLite<*, *>? {
         MossDebugPrinter.printBlocking(req, reply, error)
-        return hooks.firstOrNull { it.shouldHook(req) }?.hookAfter(req, reply, error)
-            ?: if (error != null) throw error else reply
+        return try {
+            hooks.firstOrNull { it.shouldHook(req) }?.hookAfter(req, reply, error)
+                ?: if (error != null) throw error else reply
+        } catch (e: MossException) {
+            throw e
+        } catch (e: Throwable) {
+            Logger.error(e) { "MossPatch hookBlockingAfter error" }
+            if (error != null) throw error else reply
+        }
     }
 
     /**
