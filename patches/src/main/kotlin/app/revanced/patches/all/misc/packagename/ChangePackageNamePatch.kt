@@ -11,15 +11,18 @@ import java.io.Closeable
 
 @Patch(
     name = "Change package name",
-    description = "Appends \".revanced\" to the package name by default. Changing the package name of the app can lead to unexpected issues.",
-    use = false
+    description = "Changes the package name to org.qingye.bilibili by default, including provider authorities and permissions.",
+    use = true
 )
 @Suppress("unused")
 object ChangePackageNamePatch : ResourcePatch(), Closeable {
     private val packageNameOption = stringPatchOption(
         key = "packageName",
-        default = "Default",
-        values = mapOf("Default" to "Default"),
+        default = "org.qingye.bilibili",
+        values = mapOf(
+            "QingYe" to "org.qingye.bilibili",
+            "Default (append .revanced)" to "Default"
+        ),
         title = "Package name",
         description = "The name of the package to rename the app to.",
         required = true
@@ -52,10 +55,43 @@ object ChangePackageNamePatch : ResourcePatch(), Closeable {
 
     override fun close() = context.document["AndroidManifest.xml"].use { dom ->
         val packageName = packageNameOption.value
-        dom["manifest"].run {
-            this["package"] = (if (!packageName.isNullOrEmpty()
-                && packageName != packageNameOption.default
-            ) packageName else "${this["package"]}.revanced")
+        val oldPackageName = dom["manifest"]["package"]
+        val newPackageName = if (!packageName.isNullOrEmpty()
+            && packageName != packageNameOption.default
+        ) packageName else "$oldPackageName.revanced"
+        dom["manifest"]["package"] = newPackageName
+        // Also rename provider authorities, permissions, and other references
+        // to avoid conflicts with original app
+        if (newPackageName != oldPackageName) {
+            dom.walk { node ->
+                node.attributes?.run {
+                    for (i in 0 until length) {
+                        val attr = item(i)
+                        if (attr.nodeValue.contains(oldPackageName)) {
+                            // Replace in authorities, permissions, and permission declarations
+                            val name = attr.nodeName
+                            if (name == "android:authorities" ||
+                                name == "android:permission" ||
+                                name == "android:readPermission" ||
+                                name == "android:writePermission" ||
+                                (name == "android:name" && node.nodeName == "permission" && attr.nodeValue.contains(oldPackageName)) ||
+                                (name == "android:name" && node.nodeName == "uses-permission" && attr.nodeValue.contains(oldPackageName))
+                            ) {
+                                attr.nodeValue = attr.nodeValue.replace(oldPackageName, newPackageName)
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private fun org.w3c.dom.Document.walk(action: (org.w3c.dom.Node) -> Unit) {
+        fun visit(node: org.w3c.dom.Node) {
+            action(node)
+            val children = node.childNodes
+            for (i in 0 until children.length) visit(children.item(i))
+        }
+        visit(documentElement)
     }
 }
