@@ -23,6 +23,10 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 )
 object HwCodecPatch : BytecodePatch(setOf(IjkMediaPlayerOptionsFingerprint)) {
     override fun execute(context: BytecodeContext) {
+        // Disabled for v8.85.0+: the fingerprint matches wrong methods causing VerifyError
+        // The IjkMediaPlayer options method no longer has the expected ()V signature
+        return
+        @Suppress("UNREACHABLE_CODE")
         val result = IjkMediaPlayerOptionsFingerprint.result ?: return
         val method = result.mutableMethod
         // Only proceed if the matched method is in the expected IjkMediaPlayer package
