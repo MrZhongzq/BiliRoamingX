@@ -23,39 +23,57 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 )
 object HwCodecPatch : BytecodePatch(setOf(IjkMediaPlayerOptionsFingerprint)) {
     override fun execute(context: BytecodeContext) {
+        val method = IjkMediaPlayerOptionsFingerprint.result?.mutableMethod ?: return
+        // Verify the matched method actually contains the expected references
+        val hasSetOptionBundle = method.implementation!!.instructions.any { inst ->
+            inst.opcode == Opcode.INVOKE_INTERFACE && runCatching {
+                val mr = (inst as BuilderInstruction35c).reference as MethodReference
+                mr.returnType == "V" && mr.parameterTypes == listOf("I", "Landroid/os/Bundle;")
+            }.getOrDefault(false)
+        }
+        val hasEnableHwCodec = method.implementation!!.instructions.any { inst ->
+            inst.opcode == Opcode.IGET_BOOLEAN && runCatching {
+                (inst as BuilderInstruction22c).reference.toString() == "Ltv/danmaku/ijk/media/player/IjkMediaConfigParams;->mEnableHwCodec:Z"
+            }.getOrDefault(false)
+        }
+        if (!hasSetOptionBundle && !hasEnableHwCodec) return // Wrong method matched, skip
+
         var indexOffset = 0
-        IjkMediaPlayerOptionsFingerprint.result?.mutableMethod?.run {
-            implementation!!.instructions.withIndex().filter { (_, inst) ->
-                inst.opcode == Opcode.INVOKE_INTERFACE && (inst as BuilderInstruction35c).let {
-                    val mr = it.reference as MethodReference
-                    // Ltv/danmaku/ijk/media/player/IIjkMediaPlayerItem;->setOptionBundle(ILandroid/os/Bundle;)V
-                    mr.returnType == "V" && mr.parameterTypes == listOf("I", "Landroid/os/Bundle;")
-                }
-            }.map { (index, inst) ->
-                index to (inst as BuilderInstruction35c).registerE
-            }.forEach { (index, register) ->
-                addInstruction(
-                    index + (indexOffset++), """
-                    invoke-static {v$register}, Lapp/revanced/bilibili/patches/HwCodecPatch;->printOptionBundle(Landroid/os/Bundle;)V
-                """.trimIndent()
-                )
-            }
-            indexOffset = 0
-            implementation!!.instructions.withIndex().filter { (_, inst) ->
-                inst.opcode == Opcode.IGET_BOOLEAN && (inst as BuilderInstruction22c).let {
-                    it.reference.toString() == "Ltv/danmaku/ijk/media/player/IjkMediaConfigParams;->mEnableHwCodec:Z"
-                }
-            }.map { (index, inst) ->
-                (index + 1) to (inst as BuilderInstruction22c).registerA
-            }.forEach { (index, register) ->
-                addInstructions(
-                    index + indexOffset, """
-                        invoke-static {v$register}, Lapp/revanced/bilibili/patches/HwCodecPatch;->enableHwCodec(Z)Z
-                        move-result v$register
+        method.run {
+            if (hasSetOptionBundle) {
+                implementation!!.instructions.withIndex().filter { (_, inst) ->
+                    inst.opcode == Opcode.INVOKE_INTERFACE && (inst as BuilderInstruction35c).let {
+                        val mr = it.reference as MethodReference
+                        mr.returnType == "V" && mr.parameterTypes == listOf("I", "Landroid/os/Bundle;")
+                    }
+                }.map { (index, inst) ->
+                    index to (inst as BuilderInstruction35c).registerE
+                }.forEach { (index, register) ->
+                    addInstruction(
+                        index + (indexOffset++), """
+                        invoke-static {v$register}, Lapp/revanced/bilibili/patches/HwCodecPatch;->printOptionBundle(Landroid/os/Bundle;)V
                     """.trimIndent()
-                )
-                indexOffset += 2
+                    )
+                }
             }
-        } ?: return
+            if (hasEnableHwCodec) {
+                indexOffset = 0
+                implementation!!.instructions.withIndex().filter { (_, inst) ->
+                    inst.opcode == Opcode.IGET_BOOLEAN && (inst as BuilderInstruction22c).let {
+                        it.reference.toString() == "Ltv/danmaku/ijk/media/player/IjkMediaConfigParams;->mEnableHwCodec:Z"
+                    }
+                }.map { (index, inst) ->
+                    (index + 1) to (inst as BuilderInstruction22c).registerA
+                }.forEach { (index, register) ->
+                    addInstructions(
+                        index + indexOffset, """
+                            invoke-static {v$register}, Lapp/revanced/bilibili/patches/HwCodecPatch;->enableHwCodec(Z)Z
+                            move-result v$register
+                        """.trimIndent()
+                    )
+                    indexOffset += 2
+                }
+            }
+        }
     }
 }
