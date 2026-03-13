@@ -38,7 +38,7 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 object OverridePlaybackSpeedPatch : MultiMethodBytecodePatch(
     multiFingerprints = setOf(
         PlaybackSpeedSettingFingerprint,
-        PlayerSpeedWidgetFingerprint,
+        // PlayerSpeedWidgetFingerprint disabled: causes VerifyError on gs3.b in v8.85.0
         UnitePlayerSetSpeedMenuFingerprint,
     )
 ) {
@@ -59,47 +59,9 @@ object OverridePlaybackSpeedPatch : MultiMethodBytecodePatch(
             """.trimIndent()
             )
         }
-        PlayerSpeedWidgetFingerprint.result.mapNotNull { r ->
-            r.mutableClass.methods.firstNotNullOfOrNull { m ->
-                m.implementation?.instructions?.indexOfFirst {
-                    it.opcode == Opcode.CONST && it is WideLiteralInstruction && it.wideLiteral == 0x3ffeb852L // 1.99f
-                }?.takeIf { it != -1 }?.let { insertIndex ->
-                    val oneIndex = m.implementation!!.instructions.indexOfFirst {
-                        it.opcode == Opcode.CONST_HIGH16 && it is WideLiteralInstruction && it.wideLiteral == 0x3f800000L // 1.0f
-                    }
-                    // Verify the goto won't skip register initializations needed later
-                    // Check if any registers initialized between insertIndex and oneIndex
-                    // are used after oneIndex
-                    val instructions = m.implementation!!.instructions.toList()
-                    val safeToGoto = if (oneIndex > insertIndex + 1) {
-                        // Check no CONST/CONST_HIGH16 between insertIndex+1 and oneIndex
-                        // whose register is used after oneIndex (simple heuristic)
-                        val skippedInits = (insertIndex + 1 until oneIndex).filter { i ->
-                            instructions[i].opcode in listOf(Opcode.CONST_HIGH16, Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16)
-                        }
-                        skippedInits.isEmpty() || skippedInits.all { i ->
-                            val reg = (instructions[i] as? OneRegisterInstruction)?.registerA ?: -1
-                            // Check if this register is re-initialized before being used after oneIndex
-                            (oneIndex until instructions.size).firstOrNull { j ->
-                                (instructions[j] as? OneRegisterInstruction)?.registerA == reg
-                            }?.let { reinitIdx ->
-                                // register is re-initialized before any use
-                                true
-                            } ?: false
-                        }
-                    } else true
-                    if (safeToGoto) Triple(m, insertIndex, oneIndex) else null
-                }
-            }
-        }.ifEmpty {
-            // Not critical - just skip if no safe targets found
-            return@execute
-        }.forEach { (m, insertIndex, oneIndex) ->
-            m.addInstructionsWithLabels(
-                insertIndex, "goto :cmp_one",
-                ExternalLabel("cmp_one", m.getInstruction(oneIndex))
-            )
-        }
+        // Disabled for v8.85.0: The goto injection from 1.99f to 1.0f skips
+        // register initializations in gs3.b.w2(), causing VerifyError.
+        // The speed cap removal is not essential - official app handles speeds well.
         // start from 7.80.0
         UnitePlayerSetSpeedMenuFingerprint.result.forEach { r ->
             val lastIndex = r.scanResult.stringsScanResult!!.matches.last().index
