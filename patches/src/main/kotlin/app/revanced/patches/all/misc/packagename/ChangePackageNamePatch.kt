@@ -57,7 +57,7 @@ object ChangePackageNamePatch : ResourcePatch(), Closeable {
         val packageName = packageNameOption.value
         val oldPackageName = dom["manifest"]["package"]
         val newPackageName = if (!packageName.isNullOrEmpty()
-            && packageName != packageNameOption.default
+            && packageName != "Default"
         ) packageName else "$oldPackageName.revanced"
         dom["manifest"]["package"] = newPackageName
         // Also rename provider authorities, permissions, and other references
@@ -67,18 +67,23 @@ object ChangePackageNamePatch : ResourcePatch(), Closeable {
                 node.attributes?.run {
                     for (i in 0 until length) {
                         val attr = item(i)
+                        val name = attr.nodeName
+                        // Replace old package name in authorities, permissions
                         if (attr.nodeValue.contains(oldPackageName)) {
-                            // Replace in authorities, permissions, and permission declarations
-                            val name = attr.nodeName
                             if (name == "android:authorities" ||
                                 name == "android:permission" ||
                                 name == "android:readPermission" ||
                                 name == "android:writePermission" ||
-                                (name == "android:name" && node.nodeName == "permission" && attr.nodeValue.contains(oldPackageName)) ||
-                                (name == "android:name" && node.nodeName == "uses-permission" && attr.nodeValue.contains(oldPackageName))
+                                (name == "android:name" && node.nodeName == "permission") ||
+                                (name == "android:name" && node.nodeName == "uses-permission")
                             ) {
                                 attr.nodeValue = attr.nodeValue.replace(oldPackageName, newPackageName)
                             }
+                        }
+                        // Also make all provider authorities unique to avoid conflicts
+                        // (e.g. Facebook provider has a hardcoded authority)
+                        if (name == "android:authorities" && !attr.nodeValue.contains(newPackageName)) {
+                            attr.nodeValue = "$newPackageName.${attr.nodeValue}"
                         }
                     }
                 }

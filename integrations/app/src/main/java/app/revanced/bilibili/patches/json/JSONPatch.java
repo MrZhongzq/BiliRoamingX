@@ -5,8 +5,6 @@ import android.text.TextUtils;
 import androidx.annotation.Keep;
 
 import com.alibaba.fastjson.annotation.JSONField;
-import com.bilibili.ad.adview.videodetail.danmakuv2.model.Dm;
-import com.bilibili.ad.adview.videodetail.danmakuv2.model.DmAdvert;
 import com.bilibili.app.authorspace.api.BiliSpace;
 import com.bilibili.app.comm.list.widget.recommend.RecommendModeGuidanceConfig;
 import com.bilibili.app.gemini.ugc.feature.share.ShareIconResult;
@@ -59,6 +57,14 @@ import tv.danmaku.bili.ui.splash.event.EventSplashDataList;
 public class JSONPatch {
     public static List<BottomItem> drawerItems = new ArrayList<>();
     public static List<BottomItem> bottomItems = new ArrayList<>();
+
+    private static boolean isDmAdvert(Object obj) {
+        try {
+            return obj.getClass().getName().equals("com.bilibili.ad.adview.videodetail.danmakuv2.model.DmAdvert");
+        } catch (Throwable e) {
+            return false;
+        }
+    }
     private static final Lazy<String> tabIdFieldName = LazyKt.lazy(() -> {
         var name = "";
         for (Field field : ChannelTabV2.class.getDeclaredFields()) {
@@ -102,11 +108,14 @@ public class JSONPatch {
                 // no problem, see com.bilibili.okretro.BiliApiDataCallback
                 return null;
             }
-        } else if (data instanceof DmAdvert dmAdvert) {
+        } else if (isDmAdvert(data)) {
             if (Settings.BlockUpRcmdAds.get()) {
-                List<Dm> ads = dmAdvert.getAds();
-                if (ads != null)
-                    ads.clear();
+                try {
+                    var ads = data.getClass().getMethod("getAds").invoke(data);
+                    if (ads instanceof List<?> adsList)
+                        adsList.clear();
+                } catch (Throwable ignored) {
+                }
             }
         } else if (data instanceof LiveShoppingInfo info) {
             if (Settings.PurifyLivePopups.get().contains("shoppingCard")) {
