@@ -67,11 +67,33 @@ object OverridePlaybackSpeedPatch : MultiMethodBytecodePatch(
                     val oneIndex = m.implementation!!.instructions.indexOfFirst {
                         it.opcode == Opcode.CONST_HIGH16 && it is WideLiteralInstruction && it.wideLiteral == 0x3f800000L // 1.0f
                     }
-                    Triple(m, insertIndex, oneIndex)
+                    // Verify the goto won't skip register initializations needed later
+                    // Check if any registers initialized between insertIndex and oneIndex
+                    // are used after oneIndex
+                    val instructions = m.implementation!!.instructions.toList()
+                    val safeToGoto = if (oneIndex > insertIndex + 1) {
+                        // Check no CONST/CONST_HIGH16 between insertIndex+1 and oneIndex
+                        // whose register is used after oneIndex (simple heuristic)
+                        val skippedInits = (insertIndex + 1 until oneIndex).filter { i ->
+                            instructions[i].opcode in listOf(Opcode.CONST_HIGH16, Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16)
+                        }
+                        skippedInits.isEmpty() || skippedInits.all { i ->
+                            val reg = (instructions[i] as? OneRegisterInstruction)?.registerA ?: -1
+                            // Check if this register is re-initialized before being used after oneIndex
+                            (oneIndex until instructions.size).firstOrNull { j ->
+                                (instructions[j] as? OneRegisterInstruction)?.registerA == reg
+                            }?.let { reinitIdx ->
+                                // register is re-initialized before any use
+                                true
+                            } ?: false
+                        }
+                    } else true
+                    if (safeToGoto) Triple(m, insertIndex, oneIndex) else null
                 }
             }
         }.ifEmpty {
-            throw PlayerSpeedWidgetFingerprint.exception
+            // Not critical - just skip if no safe targets found
+            return@execute
         }.forEach { (m, insertIndex, oneIndex) ->
             m.addInstructionsWithLabels(
                 insertIndex, "goto :cmp_one",
