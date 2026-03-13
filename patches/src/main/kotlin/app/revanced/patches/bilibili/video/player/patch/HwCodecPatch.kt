@@ -21,7 +21,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
         CompatiblePackage(name = "com.bilibili.app.in")
     ]
 )
-object HwCodecPatch : BytecodePatch(setOf(IjkMediaPlayerOptionsFingerprint)) {
+object HwCodecPatch : BytecodePatch() {
     override fun execute(context: BytecodeContext) {
         // Disabled for v8.85.0+: the fingerprint matches wrong methods causing VerifyError
         // The IjkMediaPlayer options method no longer has the expected ()V signature
